@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Regine Bertschinger</title>
-  <meta name="description" content="The official, completely unofficial home of Regine Bertschinger.">
+  <meta name="description" content="The official, completely unofficial home of Regine Bertschinger, teacher of German and English at KZO.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +50,7 @@
       place-items: center;
       text-align: center;
       position: relative;
+      padding: 48px 0;
     }
     .blob {
       position: absolute; border-radius: 50%; filter: blur(2px); opacity: .55; z-index: 0;
@@ -71,7 +72,7 @@
     h1 span { display: block; }
     h1 .first { color: var(--pink); }
     h1 .last { color: var(--purple); }
-    .lead { font-size: clamp(1.05rem, 2.6vw, 1.35rem); color: var(--muted); max-width: 36ch; margin: 0 auto 28px; }
+    .lead { font-size: clamp(1.05rem, 2.6vw, 1.35rem); color: var(--muted); max-width: 38ch; margin: 0 auto 28px; }
     .btn {
       border: 3px solid var(--ink); background: var(--yellow); color: #2b1d3a;
       font-size: 1.15rem; font-weight: 700; padding: 12px 26px; border-radius: 16px;
@@ -80,10 +81,30 @@
     .btn:hover { transform: translateY(-2px) rotate(-1deg); }
     .btn:active { transform: translateY(3px); box-shadow: none; }
 
+    /* Photo placeholders: drop a file at the img src path and it replaces the placeholder */
+    .photo {
+      position: relative; overflow: hidden; background:
+        repeating-linear-gradient(45deg, rgba(123,92,255,.12) 0 12px, rgba(255,93,143,.12) 12px 24px), var(--card);
+      border: 3px solid var(--ink); display: grid; place-items: center; text-align: center;
+      color: var(--muted); font-family: Fredoka, sans-serif;
+    }
+    .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .photo .ph { padding: 8px; font-size: .95rem; }
+    .photo .ph b { display: block; font-size: 2rem; }
+    .avatar { width: 170px; height: 170px; border-radius: 50%; margin: 0 auto 8px; box-shadow: var(--shadow); }
+
     section { padding: 64px 0; }
     h2 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 24px; }
 
-    /* Fun facts */
+    /* About */
+    .about { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: center; }
+    @media (min-width: 720px) { .about { grid-template-columns: 280px 1fr; } }
+    .about .photo { aspect-ratio: 4 / 5; border-radius: 20px; box-shadow: var(--shadow); transform: rotate(-2deg); }
+    .about p { font-size: 1.1rem; margin: 0 0 14px; }
+    .hl { background: linear-gradient(transparent 60%, var(--yellow) 60%); color: inherit; padding: 0 2px; }
+    @media (prefers-color-scheme: dark) { .hl { background: linear-gradient(transparent 60%, rgba(255,201,60,.45) 60%); } }
+
+    /* Cards */
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
     .card {
       background: var(--card); border: 3px solid var(--ink); border-radius: 20px;
@@ -95,20 +116,30 @@
     .card h3 { margin: 8px 0 4px; font-size: 1.3rem; }
     .card p { margin: 0; color: var(--muted); }
 
+    /* Gallery */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 22px; }
+    .polaroid { background: #fff; border: 3px solid var(--ink); padding: 10px 10px 0; box-shadow: var(--shadow); transition: transform .2s; }
+    .polaroid:nth-child(1) { transform: rotate(-3deg); }
+    .polaroid:nth-child(2) { transform: rotate(2deg); }
+    .polaroid:nth-child(3) { transform: rotate(-1deg); }
+    .polaroid:hover { transform: rotate(0) scale(1.04); }
+    .polaroid .photo { aspect-ratio: 1; border-width: 2px; }
+    .polaroid figcaption { color: #2b1d3a; font-family: Fredoka, sans-serif; text-align: center; padding: 10px 4px 14px; }
+
     /* Meter */
     .meter-box { background: var(--card); border: 3px solid var(--ink); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); }
     .meter-row { margin: 14px 0; }
-    .meter-row .label { display: flex; justify-content: space-between; font-weight: 500; }
+    .meter-row .label { display: flex; justify-content: space-between; gap: 12px; font-weight: 500; }
     .bar { height: 18px; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; background: var(--bg); }
     .fill { height: 100%; width: 0; border-radius: 999px; transition: width 1.4s cubic-bezier(.2,.9,.3,1.2); }
 
-    /* Compliment */
+    /* Fact machine */
     .compliment {
       text-align: center; background: var(--purple); color: #fff; border-radius: 28px;
       padding: 48px 20px; border: 3px solid var(--ink); box-shadow: var(--shadow);
     }
     .compliment h2 { color: #fff; }
-    #quote { font-family: Fredoka, sans-serif; font-size: clamp(1.3rem, 4vw, 2rem); min-height: 3.2em; margin: 0 auto 24px; max-width: 28ch; }
+    #quote { font-family: Fredoka, sans-serif; font-size: clamp(1.3rem, 4vw, 2rem); min-height: 3.2em; margin: 0 auto 24px; max-width: 30ch; }
 
     footer { text-align: center; padding: 40px 16px 56px; color: var(--muted); font-size: .9rem; }
 
@@ -121,43 +152,82 @@
   <header>
     <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
     <div class="hero wrap">
+      <!-- PHOTO: put a picture at photos/regine-hero.jpg -->
+      <div class="photo avatar">
+        <img src="photos/regine-hero.jpg" alt="Regine Bertschinger" onerror="this.remove()">
+        <span class="ph"><b>📷</b>Photo coming soon</span>
+      </div>
       <span class="tag">THE OFFICIAL UNOFFICIAL WEBSITE</span>
       <h1><span class="first">Regine</span><span class="last">Bertschinger</span></h1>
-      <!-- EDIT ME: a one-line description of Regine -->
-      <p class="lead">Legend. Icon. Proud owner of an entire website for no particular reason.</p>
+      <p class="lead">Teacher of German &amp; English at the Kantonsschule Zürcher Oberland. Ski-tour leader. Committee legend. Grammar's best friend.</p>
       <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
     </div>
   </header>
 
   <main class="wrap">
+    <section id="about">
+      <h2>Grüezi! Meet Regine</h2>
+      <div class="about">
+        <!-- PHOTO: put a picture at photos/regine-about.jpg -->
+        <div class="photo">
+          <img src="photos/regine-about.jpg" alt="Regine Bertschinger" onerror="this.remove()">
+          <span class="ph"><b>🖼️</b>Portrait goes here</span>
+        </div>
+        <div>
+          <p>Regine Bertschinger teaches <mark class="hl">German and English</mark> at the <strong>Kantonsschule Zürcher Oberland (KZO)</strong> in the Zürcher Oberland. That means she's fluent in Goethe <em>and</em> Shakespeare, and she can spot a misplaced comma in either language.</p>
+          <p>Teaching is only part of it. She sits on internal and external committees, leads <mark class="hl">Fachwochen</mark> (subject weeks), and organises the <mark class="hl">ski tour weeks</mark>, where students find out what "uphill" really means.</p>
+          <p>When the Swiss Women's Strike (<em>Frauenstreik</em>) came around, she was the media representative for the KZO women's group.</p>
+        </div>
+      </div>
+    </section>
+
     <section id="facts">
       <h2>Verified fun facts*</h2>
-      <!-- EDIT ME: swap these for real facts about Regine -->
       <div class="grid">
-        <div class="card"><div class="emoji">☕</div><h3>Fuel source</h3><p>Runs on coffee, good vibes, and the occasional snack.</p></div>
-        <div class="card"><div class="emoji">🏔️</div><h3>Natural habitat</h3><p>Wherever the fun is happening. Usually the centre of it.</p></div>
-        <div class="card"><div class="emoji">🦸</div><h3>Superpower</h3><p>Making any room about 40% better just by walking in.</p></div>
-        <div class="card"><div class="emoji">🏆</div><h3>Achievements</h3><p>Has a domain name. How many people can say that?</p></div>
+        <div class="card"><div class="emoji">📚</div><h3>Bilingual brain</h3><p>German and English at full power. Der, die, das <em>and</em> the past perfect continuous? No problem.</p></div>
+        <div class="card"><div class="emoji">⛷️</div><h3>Ski tour boss</h3><p>Organises the KZO ski tour weeks. Skins on, headlamp ready, pace: unstoppable.</p></div>
+        <div class="card"><div class="emoji">🧪</div><h3>Fachwochen leader</h3><p>Leads whole subject weeks. Most people struggle to plan a single afternoon.</p></div>
+        <div class="card"><div class="emoji">🗂️</div><h3>Committee champion</h3><p>Internal committees, external committees. If something's being decided, Regine is probably in the room.</p></div>
+        <div class="card"><div class="emoji">📣</div><h3>Voice of the strike</h3><p>Spoke to the media for the KZO women's group during the Swiss Women's Strike.</p></div>
+        <div class="card"><div class="emoji">🏔️</div><h3>Home turf</h3><p>Zürcher Oberland: lakes, hills, and the occasional perfectly constructed sentence.</p></div>
       </div>
       <p style="color:var(--muted);font-size:.85rem;margin-top:14px">*verified by absolutely nobody</p>
     </section>
 
+    <section id="gallery">
+      <h2>The photo wall</h2>
+      <!-- PHOTOS: put pictures at photos/regine-1.jpg, regine-2.jpg, regine-3.jpg and edit the captions -->
+      <div class="gallery">
+        <figure class="polaroid" style="margin:0">
+          <div class="photo"><img src="photos/regine-1.jpg" alt="Regine on a ski tour" onerror="this.remove()"><span class="ph"><b>⛷️</b>Ski tour photo</span></div>
+          <figcaption>Summit selfie, probably</figcaption>
+        </figure>
+        <figure class="polaroid" style="margin:0">
+          <div class="photo"><img src="photos/regine-2.jpg" alt="Regine in the classroom" onerror="this.remove()"><span class="ph"><b>📖</b>Classroom photo</span></div>
+          <figcaption>Mid-explanation of the subjunctive</figcaption>
+        </figure>
+        <figure class="polaroid" style="margin:0">
+          <div class="photo"><img src="photos/regine-3.jpg" alt="Regine" onerror="this.remove()"><span class="ph"><b>🎉</b>Fun photo</span></div>
+          <figcaption>Peak Regine energy</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section id="meter">
       <h2>The Regine-o-meter™</h2>
-      <!-- EDIT ME: change labels and values (0-100+) -->
       <div class="meter-box">
-        <div class="meter-row"><div class="label"><span>Awesomeness</span><span>110%</span></div><div class="bar"><div class="fill" data-w="100" style="background:var(--pink)"></div></div></div>
-        <div class="meter-row"><div class="label"><span>Coolness</span><span>97%</span></div><div class="bar"><div class="fill" data-w="97" style="background:var(--teal)"></div></div></div>
-        <div class="meter-row"><div class="label"><span>Laugh volume</span><span>89%</span></div><div class="bar"><div class="fill" data-w="89" style="background:var(--yellow)"></div></div></div>
-        <div class="meter-row"><div class="label"><span>Patience before coffee</span><span>12%</span></div><div class="bar"><div class="fill" data-w="12" style="background:var(--purple)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Grammar precision</span><span>110%</span></div><div class="bar"><div class="fill" data-w="100" style="background:var(--pink)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Altitude gained on ski tours</span><span>98%</span></div><div class="bar"><div class="fill" data-w="98" style="background:var(--teal)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Committee meetings survived</span><span>94%</span></div><div class="bar"><div class="fill" data-w="94" style="background:var(--yellow)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Belief in "the dog ate my homework"</span><span>3%</span></div><div class="bar"><div class="fill" data-w="3" style="background:var(--purple)"></div></div></div>
       </div>
     </section>
 
     <section>
       <div class="compliment">
         <h2>Need a Regine fact?</h2>
-        <p id="quote">Click the button. You know you want to.</p>
-        <button class="btn" id="next">Another one!</button>
+        <p id="quote">Click the button. Bitte. Please.</p>
+        <button class="btn" id="next">Noch eins! / Another one!</button>
       </div>
     </section>
   </main>
@@ -165,16 +235,17 @@
   <footer>Made with ❤️ for Regine · reginebertschinger.com</footer>
 
   <script>
-    // EDIT ME: add your own lines here
     const quotes = [
-      "Regine doesn't need a map. The roads rearrange themselves.",
-      "Scientists agree: Regine is at least 73% sunshine.",
-      "Regine once high-fived a cloud. It rained confetti.",
-      "When Regine enters a party, the playlist gets better.",
-      "Regine's to-do list is just a list of things she has already done.",
-      "Cats think Regine is cool. Cats think nobody is cool.",
-      "Regine's spirit animal is also Regine.",
-      "Regine doesn't follow trends. Trends follow Regine."
+      "Regine can spot a missing comma from the top of a ski slope.",
+      "Goethe and Shakespeare have a group chat. Regine is the admin.",
+      "Nominativ, Akkusativ, Dativ, Genitiv … Regine-ativ.",
+      "Regine speaks two languages fluently: German, English, and Committee.",
+      "When ski tour week is announced, the mountains get a little nervous.",
+      "Regine doesn't mark essays. The essays correct themselves out of respect.",
+      "Her red pen has its own fan club.",
+      "Regine has planned more Fachwochen than most people have planned weekends.",
+      "Irregular verbs behave themselves when Regine is in the room.",
+      "Regine's idea of a relaxing holiday: 1,200 metres of elevation before lunch."
     ];
     let last = -1;
     document.getElementById('next').addEventListener('click', () => {
