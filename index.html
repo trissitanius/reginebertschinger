@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regine Bertschinger</title>
+  <meta name="description" content="The official, completely unofficial home of Regine Bertschinger.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fff8ef;
+      --ink: #2b1d3a;
+      --muted: #6b5a7a;
+      --card: #ffffff;
+      --pink: #ff5d8f;
+      --yellow: #ffc93c;
+      --teal: #2ec4b6;
+      --purple: #7b5cff;
+      --shadow: 0 6px 0 rgba(43, 29, 58, .12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1b1426;
+        --ink: #f6eefc;
+        --muted: #bfaed0;
+        --card: #2a2038;
+        --shadow: 0 6px 0 rgba(0, 0, 0, .35);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, button { font-family: Fredoka, Inter, sans-serif; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+
+    /* Hero */
+    header {
+      min-height: 92vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      position: relative;
+    }
+    .blob {
+      position: absolute; border-radius: 50%; filter: blur(2px); opacity: .55; z-index: 0;
+      animation: float 9s ease-in-out infinite;
+    }
+    .b1 { width: 220px; height: 220px; background: var(--pink); top: 8%; left: -40px; }
+    .b2 { width: 160px; height: 160px; background: var(--yellow); bottom: 12%; right: 4%; animation-delay: -3s; }
+    .b3 { width: 110px; height: 110px; background: var(--teal); top: 18%; right: 18%; animation-delay: -6s; }
+    @keyframes float { 50% { transform: translateY(-24px) rotate(8deg); } }
+    .hero { position: relative; z-index: 1; }
+    .tag {
+      display: inline-block; background: var(--ink); color: var(--bg);
+      padding: 4px 14px; border-radius: 999px; font-size: .85rem; letter-spacing: .04em;
+    }
+    h1 {
+      font-size: clamp(2.6rem, 10vw, 6.5rem);
+      line-height: 1; margin: 18px 0 12px;
+    }
+    h1 span { display: block; }
+    h1 .first { color: var(--pink); }
+    h1 .last { color: var(--purple); }
+    .lead { font-size: clamp(1.05rem, 2.6vw, 1.35rem); color: var(--muted); max-width: 36ch; margin: 0 auto 28px; }
+    .btn {
+      border: 3px solid var(--ink); background: var(--yellow); color: #2b1d3a;
+      font-size: 1.15rem; font-weight: 700; padding: 12px 26px; border-radius: 16px;
+      cursor: pointer; box-shadow: var(--shadow); transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-2px) rotate(-1deg); }
+    .btn:active { transform: translateY(3px); box-shadow: none; }
+
+    section { padding: 64px 0; }
+    h2 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 24px; }
+
+    /* Fun facts */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--card); border: 3px solid var(--ink); border-radius: 20px;
+      padding: 22px; box-shadow: var(--shadow); transition: transform .2s;
+    }
+    .card:nth-child(odd):hover { transform: rotate(-2deg) scale(1.02); }
+    .card:nth-child(even):hover { transform: rotate(2deg) scale(1.02); }
+    .card .emoji { font-size: 2.2rem; }
+    .card h3 { margin: 8px 0 4px; font-size: 1.3rem; }
+    .card p { margin: 0; color: var(--muted); }
+
+    /* Meter */
+    .meter-box { background: var(--card); border: 3px solid var(--ink); border-radius: 20px; padding: 24px; box-shadow: var(--shadow); }
+    .meter-row { margin: 14px 0; }
+    .meter-row .label { display: flex; justify-content: space-between; font-weight: 500; }
+    .bar { height: 18px; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; background: var(--bg); }
+    .fill { height: 100%; width: 0; border-radius: 999px; transition: width 1.4s cubic-bezier(.2,.9,.3,1.2); }
+
+    /* Compliment */
+    .compliment {
+      text-align: center; background: var(--purple); color: #fff; border-radius: 28px;
+      padding: 48px 20px; border: 3px solid var(--ink); box-shadow: var(--shadow);
+    }
+    .compliment h2 { color: #fff; }
+    #quote { font-family: Fredoka, sans-serif; font-size: clamp(1.3rem, 4vw, 2rem); min-height: 3.2em; margin: 0 auto 24px; max-width: 28ch; }
+
+    footer { text-align: center; padding: 40px 16px 56px; color: var(--muted); font-size: .9rem; }
+
+    canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <header>
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    <div class="hero wrap">
+      <span class="tag">THE OFFICIAL UNOFFICIAL WEBSITE</span>
+      <h1><span class="first">Regine</span><span class="last">Bertschinger</span></h1>
+      <!-- EDIT ME: a one-line description of Regine -->
+      <p class="lead">Legend. Icon. Proud owner of an entire website for no particular reason.</p>
+      <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="facts">
+      <h2>Verified fun facts*</h2>
+      <!-- EDIT ME: swap these for real facts about Regine -->
+      <div class="grid">
+        <div class="card"><div class="emoji">☕</div><h3>Fuel source</h3><p>Runs on coffee, good vibes, and the occasional snack.</p></div>
+        <div class="card"><div class="emoji">🏔️</div><h3>Natural habitat</h3><p>Wherever the fun is happening. Usually the centre of it.</p></div>
+        <div class="card"><div class="emoji">🦸</div><h3>Superpower</h3><p>Making any room about 40% better just by walking in.</p></div>
+        <div class="card"><div class="emoji">🏆</div><h3>Achievements</h3><p>Has a domain name. How many people can say that?</p></div>
+      </div>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:14px">*verified by absolutely nobody</p>
+    </section>
+
+    <section id="meter">
+      <h2>The Regine-o-meter™</h2>
+      <!-- EDIT ME: change labels and values (0-100+) -->
+      <div class="meter-box">
+        <div class="meter-row"><div class="label"><span>Awesomeness</span><span>110%</span></div><div class="bar"><div class="fill" data-w="100" style="background:var(--pink)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Coolness</span><span>97%</span></div><div class="bar"><div class="fill" data-w="97" style="background:var(--teal)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Laugh volume</span><span>89%</span></div><div class="bar"><div class="fill" data-w="89" style="background:var(--yellow)"></div></div></div>
+        <div class="meter-row"><div class="label"><span>Patience before coffee</span><span>12%</span></div><div class="bar"><div class="fill" data-w="12" style="background:var(--purple)"></div></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="compliment">
+        <h2>Need a Regine fact?</h2>
+        <p id="quote">Click the button. You know you want to.</p>
+        <button class="btn" id="next">Another one!</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Made with ❤️ for Regine · reginebertschinger.com</footer>
+
+  <script>
+    // EDIT ME: add your own lines here
+    const quotes = [
+      "Regine doesn't need a map. The roads rearrange themselves.",
+      "Scientists agree: Regine is at least 73% sunshine.",
+      "Regine once high-fived a cloud. It rained confetti.",
+      "When Regine enters a party, the playlist gets better.",
+      "Regine's to-do list is just a list of things she has already done.",
+      "Cats think Regine is cool. Cats think nobody is cool.",
+      "Regine's spirit animal is also Regine.",
+      "Regine doesn't follow trends. Trends follow Regine."
+    ];
+    let last = -1;
+    document.getElementById('next').addEventListener('click', () => {
+      let i;
+      do { i = Math.floor(Math.random() * quotes.length); } while (i === last && quotes.length > 1);
+      last = i;
+      document.getElementById('quote').textContent = quotes[i];
+      burst(60);
+    });
+    document.getElementById('celebrate').addEventListener('click', () => burst(220));
+
+    // Animate meters when visible
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: .4 });
+    io.observe(document.querySelector('.meter-box'));
+
+    // Tiny confetti engine
+    const cv = document.getElementById('confetti'), ctx = cv.getContext('2d');
+    const colors = ['#ff5d8f', '#ffc93c', '#2ec4b6', '#7b5cff', '#ffffff'];
+    let parts = [], running = false;
+    function size() { cv.width = innerWidth; cv.height = innerHeight; }
+    addEventListener('resize', size); size();
+    function burst(n) {
+      for (let k = 0; k < n; k++) {
+        parts.push({
+          x: innerWidth / 2, y: innerHeight * .45,
+          vx: (Math.random() - .5) * 18, vy: Math.random() * -16 - 4,
+          s: Math.random() * 8 + 4, r: Math.random() * 6, vr: (Math.random() - .5) * .3,
+          c: colors[k % colors.length], life: 0
+        });
+      }
+      if (!running) { running = true; requestAnimationFrame(tick); }
+    }
+    function tick() {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      parts = parts.filter(p => p.y < cv.height + 40 && p.life < 400);
+      for (const p of parts) {
+        p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+        ctx.restore();
+      }
+      if (parts.length) requestAnimationFrame(tick); else { running = false; ctx.clearRect(0, 0, cv.width, cv.height); }
+    }
+  </script>
+</body>
+</html>
