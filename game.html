@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ochs am Berg: Regine Edition</title>
+  <meta name="description" content="Red light, green light with Regine Bertschinger. Sneak your late homework onto her desk, but don't move when the laser eyes are on.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚦</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink: #2b1d3a; --yellow: #ffc93c; --pink: #ff5d8f; --teal: #2ec4b6; --purple: #7b5cff; --red: #ff3b3b; }
+    html, body {
+      margin: 0; height: 100%; background: #1b1426; overflow: hidden; color: #fff;
+      font-family: Fredoka, system-ui, sans-serif;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+    .overlay {
+      position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
+      background: rgba(20, 12, 30, .7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); overflow-y: auto;
+    }
+    .overlay[hidden] { display: none; }
+    .panel {
+      background: #fff8ef; color: var(--ink); border: 3px solid var(--ink); border-radius: 24px;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, .35); padding: 22px; width: 100%; max-width: 470px; text-align: center;
+      animation: pop .35s cubic-bezier(.2, .9, .3, 1.3);
+    }
+    @keyframes pop { from { transform: scale(.85) rotate(-2deg); opacity: 0; } }
+    .panel h1 { font-size: clamp(2rem, 8vw, 2.9rem); margin: 0; line-height: 1.05; color: var(--pink); }
+    .panel h1 small { display: block; font-size: .42em; color: var(--purple); margin-top: 8px; }
+    .panel p { font-family: Inter, system-ui, sans-serif; margin: 10px 0; line-height: 1.5; font-size: .98rem; }
+    .muted { color: #6b5a7a; font-size: .88rem !important; }
+    .how { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 12px; }
+    .how figure { margin: 0; border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; background: #fff; }
+    .how img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 28%; }
+    .how figcaption { padding: 6px 4px; font-weight: 700; font-size: .95rem; }
+    .how .g figcaption { background: var(--teal); color: #10302c; }
+    .how .r figcaption { background: var(--red); color: #fff; }
+    .btn {
+      display: inline-block; border: 3px solid var(--ink); background: var(--yellow); color: var(--ink);
+      font: 700 1.15rem Fredoka, sans-serif; padding: 11px 24px; border-radius: 16px; cursor: pointer;
+      box-shadow: 0 5px 0 rgba(43, 29, 58, .25); text-decoration: none; transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-2px) rotate(-1deg); }
+    .btn:active { transform: translateY(3px); box-shadow: none; }
+    .btn.alt { background: #fff; }
+    .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .stats {
+      display: grid; grid-template-columns: 1fr auto; gap: 6px 18px; text-align: left; margin: 16px auto 8px;
+      max-width: 290px; font-family: Inter, system-ui, sans-serif;
+    }
+    .stats b { text-align: right; }
+    .stats .total { border-top: 2px dashed #cdbfdc; padding-top: 6px; font-weight: 700; }
+    .big { font-size: 3rem; font-weight: 700; color: var(--purple); line-height: 1; margin-top: 12px; }
+    .face { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; object-position: 50% 30%; border: 3px solid var(--ink); margin: 12px auto 0; display: block; }
+    kbd { font: 600 .85em Inter, sans-serif; background: #fff; border: 2px solid var(--ink); border-bottom-width: 4px; border-radius: 6px; padding: 0 6px; }
+    #pause {
+      position: fixed; top: 10px; right: 10px; z-index: 5; width: 40px; height: 40px; border-radius: 12px;
+      background: rgba(255, 255, 255, .14); border: 2px solid rgba(255, 255, 255, .4); color: #fff;
+      font-size: 1.1rem; cursor: pointer; display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <button id="pause" aria-label="Pause">⏸</button>
+  <div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
+
+  <script>
+  (() => {
+    'use strict';
+    const cv = document.getElementById('game');
+    const ctx = cv.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const panel = document.getElementById('panel');
+    const pauseBtn = document.getElementById('pause');
+
+    // ---------- Assets ----------
+    const SRC_CLOSED = 'photos/regine-eyes-closed.jpg';
+    const SRC_LASER = 'photos/regine-laser-eyes.jpg';
+    const IMG = { closed: new Image(), laser: new Image() };
+    IMG.closed.src = SRC_CLOSED;
+    IMG.laser.src = SRC_LASER;
+    const IMG_W = 896, IMG_H = 1200;
+    const EYES = [{ x: 398, y: 430 }, { x: 532, y: 428 }]; // eye positions in the laser image
+
+    const CHANTS = [
+      ['Ochs', 'am', 'Berg —', 'eins,', 'zwei,', 'DREI!'],
+      ['Red', 'light,', 'green', 'light,', 'one, two,', 'THREE!'],
+      ['Komma,', 'Punkt,', 'Strich-', 'punkt,', 'Frage-', 'ZEICHEN!'],
+      ['Present,', 'past,', 'future', 'perfect', 'con-', 'TINUOUS!']
+    ];
+    const NPCS = [
+      { name: 'Tim Rüegg', e: '👧', lane: 0 }, { name: 'Elia', e: '👦', lane: 1 },
+      { name: 'Liam', e: '🧒', lane: 3 }, { name: 'Regines Tochter', e: '👩', lane: 4 }
+    ];
+    const MAX_V = 0.11, ACCEL = 0.6, DECEL = 0.85, EPS = 0.004, ZAP_TIME = 0.85, MAX_LIVES = 3;
+    const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
+    // ---------- Storage (optional) ----------
+    const store = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    };
+
+    // ---------- State ----------
+    let W = 0, H = 0, L = {}, smudges = [];
+    const S = {
+      screen: 'start', paused: false, muted: store.get('rlgl-muted', false), best: store.get('rlgl-best', 0),
+      level: 1, score: 0, lives: MAX_LIVES, time: 0, clock: 0,
+      phase: 'green', t: 0, dur: 0, grace: 0, chant: CHANTS[0], chantIdx: -1, chantT: 0, chantDur: 1, chantK: 1,
+      fakeAt: -1, fake: false, fakeLeft: 0, turnCount: 0,
+      shake: 0, flash: 0, turnFlash: 0, hold: false,
+      runners: [], parts: [], toasts: [], finished: 0, zapsThisLevel: 0, pending: null, lastResult: null
+    };
+
+    // ---------- Audio ----------
+    let AC = null;
+    function audio() {
+      if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+      if (AC.state === 'suspended') AC.resume();
+      return AC;
+    }
+    function tone(f, d, type = 'square', v = 0.06, f2 = null, delay = 0) {
+      if (S.muted) return;
+      const a = audio(); if (!a) return;
+      const t = a.currentTime + delay;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + 0.03);
+    }
+    function noise(d, v = 0.12) {
+      if (S.muted) return;
+      const a = audio(); if (!a) return;
+      const buf = a.createBuffer(1, Math.floor(a.sampleRate * d), a.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const s = a.createBufferSource(), g = a.createGain();
+      s.buffer = buf; g.gain.value = v; s.connect(g).connect(a.destination); s.start();
+    }
+    const sfx = {
+      word: i => tone(392 + i * 70, 0.13, 'triangle', 0.1),
+      turn: () => { tone(180, 0.28, 'sawtooth', 0.08, 900); tone(990, 0.35, 'square', 0.05, null, 0.2); },
+      back: () => tone(660, 0.12, 'triangle', 0.07, 440),
+      fake: () => { tone(260, 0.16, 'sawtooth', 0.06, 520); tone(520, 0.16, 'sawtooth', 0.05, 260, 0.18); },
+      zap: () => { tone(1500, 0.6, 'sawtooth', 0.09, 60); tone(900, 0.5, 'square', 0.05, 40); noise(0.45, 0.14); },
+      tick: () => tone(1250, 0.05, 'square', 0.04),
+      win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.2, 'triangle', 0.09, null, i * 0.1)),
+      lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.28, 'sawtooth', 0.06, null, i * 0.17)),
+      npcDone: () => tone(880, 0.08, 'triangle', 0.04)
+    };
+
+    // ---------- Layout ----------
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const hud = 58;
+      const ph = Math.max(110, Math.min(H * 0.34, 340, (W - 32) / 0.7467));
+      const pw = ph * 0.7467;
+      const deskW = Math.min(W - 24, pw * 2), deskH = Math.max(26, ph * 0.12);
+      const deskY = hud + ph - deskH * 0.4;
+      L = {
+        hud, ph, pw, px: (W - pw) / 2, py: hud, deskW, deskH, deskX: (W - deskW) / 2, deskY,
+        floorY: deskY + deskH * 0.55, top: deskY + deskH + 16, bottom: H - 112,
+        spreadB: Math.min(W - 60, 640), spreadT: Math.min(W - 90, deskW * 0.85)
+      };
+      smudges = Array.from({ length: 14 }, () => ({ x: Math.random() * W, y: Math.random() * L.floorY, r: 20 + Math.random() * 60 }));
+    }
+
+    function rpos(r) {
+      const p = Math.min(r.p, 1);
+      const y = L.bottom + (L.top - L.bottom) * p;
+      const spread = L.spreadB + (L.spreadT - L.spreadB) * p;
+      const x = W / 2 + ((r.lane - 2) / 2) * spread / 2;
+      const s = Math.max(26, Math.min(W / 13, 46)) * (1 - 0.22 * p);
+      return { x, y, s };
+    }
+
+    function portraitRect() {
+      let x = L.px, y = L.py, w = L.pw, h = L.ph;
+      if (S.fake) x += Math.sin(S.clock * 70) * 5;
+      const k = S.phase === 'red' && S.screen !== 'start' ? 1.04 : 1;
+      return { x: x - w * (k - 1) / 2, y: y - h * (k - 1) / 2, w: w * k, h: h * k };
+    }
+
+    function eyePoints() {
+      const r = portraitRect();
+      return EYES.map(e => ({ x: r.x + e.x / IMG_W * r.w, y: r.y + e.y / IMG_H * r.h }));
+    }
+
+    // ---------- Game flow ----------
+    function newGame() {
+      S.level = 1; S.score = 0; S.lives = MAX_LIVES;
+      startLevel();
+    }
+
+    function startLevel() {
+      S.runners = [{ name: 'You', e: '🧑‍🎓', lane: 2, p: 0, v: 0, player: true, state: 'run', zapT: -1, inv: 0, walk: 0 }];
+      for (const d of NPCS) {
+        S.runners.push({
+          name: d.name, e: d.e, lane: d.lane, p: 0, v: 0, player: false, state: 'run', zapT: -1, inv: 0,
+          walk: Math.random() * 6, speed: MAX_V * (0.74 + Math.random() * 0.16 + Math.min(0.1, S.level * 0.012)),
+          caution: 1, react: 0, resume: 0, fakeStop: false
+        });
+      }
+      S.time = Math.max(24, 42 - 3 * (S.level - 1));
+      S.finished = 0; S.zapsThisLevel = 0; S.pending = null; S.parts = []; S.toasts = []; S.turnCount = 0;
+      S.screen = 'play'; S.paused = false; S.hold = false; S.needRelease = false;
+      hideOverlay();
+      startGreen();
+    }
+
+    function startGreen() {
+      const lv = S.level - 1;
+      const gMin = Math.max(1.1, 2.0 - 0.12 * lv), gMax = Math.max(2.0, 4.2 - 0.2 * lv);
+      S.phase = 'green'; S.t = 0;
+      S.chantDur = S.turnCount === 0 ? Math.max(2.6, gMin) : gMin + Math.random() * (gMax - gMin);
+      S.chantT = 0; S.chantIdx = -1;
+      S.chantK = S.level === 1 ? 1 : 0.6 + Math.random() * 1.0; // uneven rhythm keeps you guessing
+      S.chant = CHANTS[S.turnCount % CHANTS.length];
+      S.fakeAt = (S.level >= 2 && S.turnCount > 0 && Math.random() < Math.min(0.55, 0.15 * S.level))
+        ? S.chantDur * (0.3 + Math.random() * 0.4) : -1;
+      S.fake = false;
+      S.turnCount++;
+      for (const r of S.runners) if (!r.player) {
+        r.caution = 0.62 + Math.random() * 0.45; // >1 means they push it until the turn
+        r.resume = 0.08 + Math.random() * 0.35;
+        r.react = 0;
+      }
+    }
+
+    function startRed() {
+      S.phase = 'red'; S.t = 0; S.chantIdx = S.chant.length - 1;
+      S.grace = Math.max(0.24, 0.5 - 0.035 * (S.level - 1));
+      S.dur = S.grace + 1.1 + Math.random() * (1.4 + 0.12 * S.level);
+      S.shake = Math.max(S.shake, 9); S.turnFlash = 1;
+      sfx.turn();
+      for (const r of S.runners) if (!r.player && r.state === 'run') {
+        const late = Math.random() < 0.14 + 0.02 * S.level;
+        r.react = late ? S.grace * (0.9 + Math.random() * 0.9) : 0.04 + Math.random() * S.grace * 0.4;
+      }
+    }
+
+    function chantP() { return Math.pow(Math.min(1, S.chantT / S.chantDur), S.chantK); }
+
+    function update(dt) {
+      if (S.screen !== 'play' || S.paused) return;
+      S.t += dt;
+
+      if (!S.pending) {
+        const prev = Math.ceil(S.time);
+        S.time -= dt;
+        if (Math.ceil(S.time) < prev && S.time < 10 && S.time > 0) sfx.tick();
+        if (S.time <= 0) { S.time = 0; gameOver('time'); return; }
+      }
+
+      if (S.phase === 'green') {
+        if (S.fakeAt >= 0 && S.chantT >= S.fakeAt) {
+          S.fake = true; S.fakeLeft = 0.55; S.fakeAt = -1; S.shake = Math.max(S.shake, 5);
+          sfx.fake();
+          for (const r of S.runners) r.fakeStop = Math.random() < 0.6;
+        }
+        if (S.fake) { S.fakeLeft -= dt; if (S.fakeLeft <= 0) S.fake = false; }
+        else S.chantT += dt;
+        const idx = Math.min(S.chant.length - 2, Math.floor(chantP() * (S.chant.length - 1)));
+        if (idx > S.chantIdx) { S.chantIdx = idx; sfx.word(idx); }
+        if (S.chantT >= S.chantDur) startRed();
+      } else if (S.t >= S.dur) {
+        sfx.back();
+        startGreen();
+      }
+
+      for (const r of S.runners) updateRunner(r, dt);
+
+      if (S.phase === 'red' && S.t > S.grace) {
+        for (const r of S.runners) {
+          if (r.state === 'run' && r.zapT < 0 && r.inv <= 0 && r.v > EPS) zap(r);
+        }
+      }
+
+      if (S.pending) {
+        S.pending.t -= dt;
+        if (S.pending.t <= 0) { const fn = S.pending.fn; S.pending = null; fn(); }
+      }
+    }
+
+    function updateRunner(r, dt) {
+      if (r.inv > 0) r.inv -= dt;
+      if (r.zapT >= 0) {
+        r.zapT += dt; r.v = 0;
+        if (r.zapT >= ZAP_TIME) resolveZap(r);
+        return;
+      }
+      if (r.state !== 'run') return;
+      const want = r.player ? (S.hold && !S.pending) : npcWants(r, dt);
+      const vmax = r.player ? MAX_V : r.speed;
+      r.v = want ? Math.min(vmax, r.v + ACCEL * dt) : Math.max(0, r.v - DECEL * dt);
+      r.p += r.v * dt;
+      if (r.v > EPS) {
+        r.walk += dt * 15;
+        if (Math.random() < dt * 9) dust(r);
+      }
+      if (r.p >= 1) {
+        r.p = 1; r.v = 0; r.state = 'done';
+        S.finished++; r.place = S.finished;
+        onFinish(r);
+      }
+    }
+
+    function npcWants(r, dt) {
+      if (S.phase === 'red') {
+        if (r.react > 0) { r.react -= dt; return true; }
+        return false;
+      }
+      if (r.resume > 0) { r.resume -= dt; return false; }
+      if (S.fake) return !r.fakeStop;
+      return chantP() < r.caution;
+    }
+
+    function zap(r) {
+      r.zapT = 0; r.v = 0;
+      S.shake = 15; S.flash = 1;
+      sfx.zap();
+      const { x, y, s } = rpos(r);
+      burst(x, y - s * 0.5, 34, ['#fff', '#ffe066', '#ff6b3d', '#ff2d2d'], 260);
+      if (r.player) {
+        S.zapsThisLevel++;
+        S.hold = false; S.needRelease = true; // must let go before moving again
+
+        if (navigator.vibrate) { try { navigator.vibrate([60, 40, 160]); } catch (e) {} }
+      }
+    }
+
+    function resolveZap(r) {
+      r.zapT = -1;
+      const { x, y, s } = rpos(r);
+      smoke(x, y - s * 0.5);
+      if (r.player) {
+        S.lives--;
+        toast('Nachsitzen! −1 ❤️', x, y - s * 1.6, '#ff6b6b');
+        if (S.lives <= 0) { r.state = 'out'; S.pending = { t: 0.7, fn: () => gameOver('zap') }; return; }
+        r.p = Math.max(0, r.p - 0.3); r.inv = 1.0;
+      } else {
+        r.state = 'out';
+        toast(r.name + ': Nachsitzen!', x, y - s * 1.4, '#ffc2c2');
+      }
+    }
+
+    function onFinish(r) {
+      const { x, y, s } = rpos(r);
+      if (r.player) {
+        sfx.win();
+        toast('Abgegeben! ✅', x, y - s * 1.6, '#7dffb0');
+        confetti(160);
+        S.pending = { t: 1.3, fn: levelComplete };
+      } else {
+        sfx.npcDone();
+        toast(r.name + ' handed in 📄', x, y - s * 1.3, '#bdf6ff');
+      }
+    }
+
+    function levelComplete() {
+      const player = S.runners[0];
+      const timeLeft = Math.ceil(S.time);
+      const lines = [
+        ['Level ' + S.level + ' bonus', 500 * S.level],
+        ['Time left (' + timeLeft + 's)', timeLeft * 50],
+        ['Place: ' + ordinal(player.place) + ' to hand in', [0, 500, 300, 150, 75, 0][player.place] || 0]
+      ];
+      if (S.zapsThisLevel === 0) lines.push(['Never got zapped', 300]);
+      const gained = lines.reduce((a, l) => a + l[1], 0);
+      S.score += gained;
+      const heart = S.lives < MAX_LIVES;
+      if (heart) S.lives++;
+      saveBest();
+      S.screen = 'between';
+      const tips = {
+        1: 'Next up: she has learned to <b>fake it</b>. Don\'t fall for it 👀',
+        2: 'Next up: shorter chants and quicker turns.',
+        3: 'Next up: the rhythm gets sneaky. Trust nothing.'
+      };
+      showOverlay(`
+        <h1>Abgegeben! ✅<small>Level ${S.level} complete</small></h1>
+        <div class="stats">
+          ${lines.map(l => `<span>${l[0]}</span><b>+${l[1]}</b>`).join('')}
+          <span class="total">Total score</span><b class="total">${S.score}</b>
+        </div>
+        ${heart ? '<p>Bonus heart! ❤️</p>' : ''}
+        <p class="muted">${tips[S.level] || 'Next up: even faster. Viel Glück!'}</p>
+        <div class="row"><button class="btn" data-primary data-act="next">Level ${S.level + 1} →</button></div>`);
+    }
+
+    function gameOver(reason) {
+      S.screen = 'over'; S.hold = false;
+      sfx.lose();
+      const newBest = saveBest();
+      showOverlay(`
+        <img class="face" src="${SRC_LASER}" alt="">
+        <h1>Nachsitzen! 😵<small>${reason === 'time' ? 'The bell rang before you made it to the desk.' : 'Frau Bertschinger saw you move.'}</small></h1>
+        <div class="big">${S.score}</div>
+        <p>points · reached level ${S.level}</p>
+        <p><b>${newBest ? '🏆 New best score!' : 'Best: ' + S.best}</b></p>
+        <div class="row">
+          <button class="btn" data-primary data-act="restart">Try again</button>
+          <a class="btn alt" href="./">Homepage</a>
+        </div>`);
+    }
+
+    function saveBest() {
+      if (S.score > S.best) { S.best = S.score; store.set('rlgl-best', S.best); return true; }
+      return false;
+    }
+
+    function ordinal(n) { return n + (['th', 'st', 'nd', 'rd'][n] || 'th'); }
+
+    // ---------- Overlay ----------
+    function showOverlay(html) {
+      panel.innerHTML = html;
+      overlay.hidden = false;
+      pauseBtn.style.display = 'none';
+    }
+    function hideOverlay() {
+      overlay.hidden = true;
+      pauseBtn.style.display = S.screen === 'play' ? 'block' : 'none';
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+    function startScreen() {
+      S.screen = 'start';
+      showOverlay(`
+        <h1>Ochs am Berg<small>Red Light, Green Light · Regine Edition</small></h1>
+        <p>You forgot your homework 😬 Sneak it onto <b>Frau Bertschinger's</b> desk before the bell rings, but only move while she isn't looking.</p>
+        <div class="how">
+          <figure class="g"><img src="${SRC_CLOSED}" alt="Regine covering her eyes"><figcaption>🟢 Eyes covered: SNEAK</figcaption></figure>
+          <figure class="r"><img src="${SRC_LASER}" alt="Regine with laser eyes"><figcaption>🔴 Laser eyes: FREEZE</figcaption></figure>
+        </div>
+        <p><b>Hold</b> <kbd>Space</kbd> or <b>press and hold</b> the screen to move. Let go to stop. You slide a little, so stop early! She fakes turns sometimes 👀</p>
+        <div class="row"><button class="btn" data-primary data-act="start">Start 🚦</button></div>
+        ${S.best ? `<p class="muted">Your best: ${S.best}</p>` : ''}`);
+    }
+    function pauseScreen() {
+      showOverlay(`
+        <h1>Pause ⏸<small>Frau Bertschinger is waiting…</small></h1>
+        <div class="row" style="flex-direction:column;align-items:center">
+          <button class="btn" data-primary data-act="resume">Resume</button>
+          <button class="btn alt" data-act="mute">${S.muted ? '🔇 Sound off' : '🔊 Sound on'}</button>
+          <button class="btn alt" data-act="restart">Restart</button>
+          <a class="btn alt" href="./">Homepage</a>
+        </div>`);
+    }
+    function togglePause(force) {
+      if (S.screen !== 'play') return;
+      S.paused = force === undefined ? !S.paused : force;
+      S.hold = false;
+      if (S.paused) pauseScreen(); else hideOverlay();
+    }
+
+    panel.addEventListener('click', e => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      audio();
+      const act = b.dataset.act;
+      if (act === 'start' || act === 'restart') newGame();
+      else if (act === 'next') { S.level++; startLevel(); }
+      else if (act === 'resume') togglePause(false);
+      else if (act === 'mute') { S.muted = !S.muted; store.set('rlgl-muted', S.muted); b.textContent = S.muted ? '🔇 Sound off' : '🔊 Sound on'; }
+    });
+    pauseBtn.addEventListener('click', () => togglePause(true));
+
+    // ---------- Input ----------
+    const HOLD_KEYS = new Set(['Space', 'ArrowUp', 'KeyW']);
+    window.addEventListener('keydown', e => {
+      if (!overlay.hidden) {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          const p = panel.querySelector('[data-primary]');
+          if (p) { e.preventDefault(); if (!e.repeat) p.click(); }
+        } else if ((e.code === 'Escape' || e.code === 'KeyP') && S.paused) togglePause(false);
+        return;
+      }
+      if (HOLD_KEYS.has(e.code)) { e.preventDefault(); if (S.screen === 'play' && !S.paused && !S.needRelease) S.hold = true; }
+      if (e.code === 'Escape' || e.code === 'KeyP') togglePause(true);
+    });
+    window.addEventListener('keyup', e => { if (HOLD_KEYS.has(e.code)) { S.hold = false; S.needRelease = false; } });
+    cv.addEventListener('pointerdown', e => {
+      S.needRelease = false;
+      if (S.screen === 'play' && !S.paused) {
+        S.hold = true;
+        try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => cv.addEventListener(ev, () => { S.hold = false; }));
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    window.addEventListener('blur', () => { S.hold = false; });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) togglePause(true); });
+    window.addEventListener('resize', resize);
+
+    // ---------- Effects ----------
+    function burst(x, y, n, colors, speed) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, v = speed * (0.3 + Math.random() * 0.7);
+        S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 300, life: 0, max: 0.5 + Math.random() * 0.4, size: 2 + Math.random() * 3, color: colors[i % colors.length], kind: 'spark' });
+      }
+    }
+    function smoke(x, y) {
+      for (let i = 0; i < 14; i++) {
+        S.parts.push({ x: x + (Math.random() - 0.5) * 20, y, vx: (Math.random() - 0.5) * 50, vy: -30 - Math.random() * 50, g: 0, life: 0, max: 0.9 + Math.random() * 0.6, size: 10 + Math.random() * 14, color: '120,110,130', kind: 'smoke' });
+      }
+    }
+    function dust(r) {
+      const { x, y, s } = rpos(r);
+      S.parts.push({ x: x + (Math.random() - 0.5) * s * 0.5, y: y - 2, vx: (Math.random() - 0.5) * 30, vy: -10 - Math.random() * 15, g: 0, life: 0, max: 0.45, size: 3 + Math.random() * 3, color: '240,220,190', kind: 'smoke' });
+    }
+    function confetti(n) {
+      const colors = ['#ff5d8f', '#ffc93c', '#2ec4b6', '#7b5cff', '#ffffff'];
+      for (let i = 0; i < n; i++) {
+        S.parts.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.3, vx: (Math.random() - 0.5) * 80, vy: 80 + Math.random() * 160, g: 60, life: 0, max: 3 + Math.random() * 2, size: 5 + Math.random() * 5, color: colors[i % colors.length], kind: 'confetti', rot: Math.random() * 6, vr: (Math.random() - 0.5) * 10 });
+      }
+    }
+    function toast(text, x, y, color) { S.toasts.push({ text, x, y, color, t: 0 }); }
+
+    function updateFx(dt) {
+      if (S.paused) return;
+      for (const p of S.parts) {
+        p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt;
+        if (p.rot !== undefined) p.rot += p.vr * dt;
+      }
+      S.parts = S.parts.filter(p => p.life < p.max);
+      for (const t of S.toasts) t.t += dt;
+      S.toasts = S.toasts.filter(t => t.t < 1.6);
+      S.shake = Math.max(0, S.shake - dt * 30);
+      S.flash = Math.max(0, S.flash - dt * 2.5);
+      S.turnFlash = Math.max(0, S.turnFlash - dt * 5);
+    }
+
+    // ---------- Drawing ----------
+    function rr(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function line(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+    const playing = () => S.screen === 'play' || S.screen === 'over' || S.screen === 'between';
+    const isRed = () => S.phase === 'red' && playing();
+
+    function drawRoom() {
+      const fy = L.floorY;
+      let g = ctx.createLinearGradient(0, 0, 0, fy);
+      g.addColorStop(0, '#26392f'); g.addColorStop(1, '#1c2b25');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, fy);
+      for (const s of smudges) {
+        const rg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+        rg.addColorStop(0, 'rgba(255,255,255,.05)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = rg; ctx.fillRect(s.x - s.r, s.y - s.r, s.r * 2, s.r * 2);
+      }
+      const side = (W - L.pw) / 2;
+      if (side > 150) {
+        const fs = Math.min(36, side / 6);
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = `600 ${fs}px Caveat, cursive`; ctx.textAlign = 'center';
+        const yy = L.py + L.ph * 0.32, lx = side / 2, rx = W - side / 2;
+        ctx.save(); ctx.translate(lx, yy); ctx.rotate(-0.05);
+        ctx.fillText('Hausaufgaben:', 0, 0); ctx.fillText('HEUTE fällig!', 0, fs * 1.2); ctx.restore();
+        ctx.save(); ctx.translate(rx, yy); ctx.rotate(0.04);
+        ctx.fillText('Homework due:', 0, 0); ctx.fillText('TODAY!', 0, fs * 1.2); ctx.restore();
+        ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
+        line(lx - fs * 2, yy + fs * 1.5, lx + fs * 2, yy + fs * 1.45);
+        line(rx - fs * 1.2, yy + fs * 1.5, rx + fs * 1.2, yy + fs * 1.55);
+        ctx.restore();
+      }
+      ctx.fillStyle = '#5a3d25'; ctx.fillRect(0, fy - 6, W, 8);
+      g = ctx.createLinearGradient(0, fy, 0, H);
+      g.addColorStop(0, '#8a6440'); g.addColorStop(1, '#c99a62');
+      ctx.fillStyle = g; ctx.fillRect(0, fy + 2, W, H - fy);
+      ctx.strokeStyle = 'rgba(60,35,15,.22)'; ctx.lineWidth = 1;
+      let y = fy + 2, gap = 7;
+      while (y < H) { y += gap; gap *= 1.16; line(0, y, W, y); }
+      const vx = W / 2, vy = fy - Math.max(160, H * 0.25);
+      for (let i = -12; i <= 12; i++) {
+        const bx = W / 2 + i * Math.max(70, W / 9);
+        const k = (fy - vy) / (H - vy);
+        line(vx + (bx - vx) * k, fy + 2, bx, H);
+      }
+      if (W > 760) {
+        for (const p of [0.12, 0.45, 0.78]) {
+          const y2 = L.bottom + (L.top - L.bottom) * p;
+          const spread = L.spreadB + (L.spreadT - L.spreadB) * p;
+          const sc = 1 - 0.3 * p;
+          for (const dir of [-1, 1]) {
+            const x2 = W / 2 + dir * (spread / 2 + 85 * sc);
+            drawStudentDesk(x2, y2, sc);
+          }
+        }
+      }
+    }
+
+    function drawStudentDesk(x, y, sc) {
+      const w = 96 * sc, h = 22 * sc, legs = 26 * sc;
+      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(x, y + 2, w * 0.55, 6 * sc, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#6b4a2e'; ctx.fillRect(x - w / 2 + 4 * sc, y - legs, 4 * sc, legs); ctx.fillRect(x + w / 2 - 8 * sc, y - legs, 4 * sc, legs);
+      ctx.fillStyle = '#e2bb85'; rr(x - w / 2, y - legs - h, w, h, 4 * sc); ctx.fill();
+      ctx.fillStyle = '#c99d63'; ctx.fillRect(x - w / 2, y - legs - 5 * sc, w, 5 * sc);
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - 14 * sc, y - legs - h + 5 * sc, 20 * sc, 12 * sc);
+    }
+
+    function drawPortrait() {
+      const r = portraitRect();
+      const img = isRed() ? IMG.laser : IMG.closed;
+      ctx.save();
+      if (isRed()) {
+        ctx.shadowColor = 'rgba(255,40,40,.95)'; ctx.shadowBlur = 34 + 12 * Math.sin(S.clock * 12);
+      } else {
+        ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
+      }
+      rr(r.x, r.y, r.w, r.h, 18);
+      ctx.fillStyle = '#2b1d3a'; ctx.fill();
+      ctx.restore();
+      ctx.save();
+      rr(r.x, r.y, r.w, r.h, 18); ctx.clip();
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, r.x, r.y, r.w, r.h);
+      if (S.turnFlash > 0) { ctx.fillStyle = `rgba(255,255,255,${S.turnFlash * 0.8})`; ctx.fillRect(r.x, r.y, r.w, r.h); }
+      ctx.restore();
+      ctx.lineWidth = 4; ctx.strokeStyle = isRed() ? '#ff3b3b' : '#2b1d3a';
+      rr(r.x, r.y, r.w, r.h, 18); ctx.stroke();
+      if (S.fake) {
+        ctx.font = `700 ${Math.round(L.ph * 0.16)}px Fredoka, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffc93c'; ctx.strokeStyle = '#2b1d3a'; ctx.lineWidth = 5;
+        ctx.strokeText('?!', r.x + r.w * 0.85, r.y + r.h * 0.18); ctx.fillText('?!', r.x + r.w * 0.85, r.y + r.h * 0.18);
+      }
+    }
+
+    function drawDesk() {
+      const { deskX: x, deskY: y, deskW: w, deskH: h } = L;
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 6, y + h, w - 12, 8);
+      ctx.fillStyle = '#7a5232'; rr(x, y + h * 0.28, w, h * 0.72, 6); ctx.fill();
+      ctx.fillStyle = '#a9774a'; rr(x - 6, y, w + 12, h * 0.34, 6); ctx.fill();
+      const pw2 = Math.min(w * 0.42, 190), ph2 = h * 0.42;
+      ctx.fillStyle = '#f3e3c3'; rr(W / 2 - pw2 / 2, y + h * 0.42, pw2, ph2, 4); ctx.fill();
+      ctx.fillStyle = '#4a3020'; ctx.font = `600 ${Math.max(10, ph2 * 0.62)}px Fredoka, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Frau Bertschinger', W / 2, y + h * 0.42 + ph2 / 2 + 1, pw2 - 8);
+      // homework pile grows as people hand in
+      const n = 4 + S.finished * 2, sx = x + w * 0.82, sw = Math.min(46, w * 0.12);
+      for (let i = 0; i < n; i++) {
+        ctx.save(); ctx.translate(sx, y + h * 0.12 - i * 2.2); ctx.rotate(Math.sin(i * 2.7) * 0.12);
+        ctx.fillStyle = i % 2 ? '#ffffff' : '#f4f1ea'; ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.lineWidth = 1;
+        ctx.fillRect(-sw / 2, -4, sw, 8); ctx.strokeRect(-sw / 2, -4, sw, 8);
+        ctx.restore();
+      }
+      ctx.save(); ctx.translate(x + w * 0.16, y + h * 0.1); ctx.rotate(-0.4);
+      ctx.fillStyle = '#ff3b3b'; ctx.fillRect(-sw * 0.4, -2, sw * 0.8, 4); ctx.restore();
+    }
+
+    function drawTrack() {
+      const tw = L.spreadT + 60, y = L.top - 6;
+      const n = Math.floor(tw / 10);
+      for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) {
+        ctx.fillStyle = (i + j) % 2 ? '#fff' : '#2b1d3a';
+        ctx.fillRect(W / 2 - tw / 2 + i * 10, y + j * 5, 10, 5);
+      }
+      ctx.save();
+      ctx.setLineDash([10, 8]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 3;
+      line(W / 2 - L.spreadB / 2 - 30, L.bottom + 8, W / 2 + L.spreadB / 2 + 30, L.bottom + 8);
+      ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 2;
+      for (const off of [-0.75, -0.25, 0.25, 0.75]) {
+        line(W / 2 + off * L.spreadB / 2, L.bottom + 8, W / 2 + off * L.spreadT / 2, L.top);
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.font = '600 12px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('START', Math.max(28, W / 2 - L.spreadB / 2 - 4), L.bottom + 14);
+    }
+
+    function drawScanBeam() {
+      if (!isRed() || S.screen !== 'play') return;
+      const eyes = eyePoints();
+      const mx = (eyes[0].x + eyes[1].x) / 2, my = (eyes[0].y + eyes[1].y) / 2;
+      const sweep = Math.sin(S.t * 2.4);
+      const ty = L.bottom - (L.bottom - L.top) * (0.35 + 0.3 * Math.sin(S.t * 1.3));
+      const tx = W / 2 + sweep * L.spreadB * 0.45, hw = 40;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createLinearGradient(mx, my, tx, ty);
+      g.addColorStop(0, 'rgba(255,40,40,.0)'); g.addColorStop(1, 'rgba(255,40,40,.16)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(tx - hw, ty); ctx.lineTo(tx + hw, ty); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,60,60,.18)'; ctx.beginPath(); ctx.ellipse(tx, ty, hw, hw * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+      for (const e of eyes) {
+        const rg = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 22);
+        rg.addColorStop(0, 'rgba(255,255,255,.9)'); rg.addColorStop(0.3, 'rgba(255,60,60,.6)'); rg.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = rg; ctx.fillRect(e.x - 22, e.y - 22, 44, 44);
+      }
+      ctx.restore();
+    }
+
+    function drawRunners() {
+      const list = S.runners.filter(r => r.state !== 'out').sort((a, b) => b.p - a.p);
+      for (const r of list) {
+        const { x, y, s } = rpos(r);
+        const moving = r.v > EPS;
+        const bob = moving ? Math.abs(Math.sin(r.walk)) * s * 0.14 : 0;
+        const zapping = r.zapT >= 0;
+        const jx = zapping ? (Math.random() - 0.5) * 8 : 0;
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        ctx.beginPath(); ctx.ellipse(x, y, s * 0.42, s * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+        if (zapping) {
+          const rg = ctx.createRadialGradient(x, y - s * 0.5, 0, x, y - s * 0.5, s);
+          rg.addColorStop(0, 'rgba(255,80,40,.75)'); rg.addColorStop(1, 'rgba(255,0,0,0)');
+          ctx.fillStyle = rg; ctx.fillRect(x - s, y - s * 1.5, s * 2, s * 2);
+        }
+        ctx.save();
+        if (r.inv > 0 && Math.floor(S.clock * 12) % 2) ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#000'; // emoji glyphs inherit the fill alpha, so keep it opaque
+        ctx.font = `${Math.round(s)}px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        const face = zapping && r.zapT > ZAP_TIME * 0.4 ? '😵' : r.e;
+        ctx.fillText(face, x + jx, y - bob);
+        if (r.player && r.state === 'run') {
+          ctx.font = `${Math.round(s * 0.45)}px ${EMOJI_FONT}`;
+          ctx.fillText('📄', x + s * 0.45 + jx, y - bob - s * 0.15);
+        }
+        if (r.state === 'done') {
+          ctx.font = `${Math.round(s * 0.5)}px ${EMOJI_FONT}`;
+          ctx.fillText('✅', x + s * 0.45, y - s * 0.7);
+        }
+        ctx.restore();
+        if (r.player) {
+          const label = r.state === 'done' ? 'DONE!' : 'YOU';
+          ctx.font = '700 13px Fredoka, sans-serif';
+          const tw = ctx.measureText(label).width + 14, ly = y - s - bob - 22;
+          ctx.fillStyle = '#ffc93c'; rr(x - tw / 2, ly, tw, 19, 9); ctx.fill();
+          ctx.strokeStyle = '#2b1d3a'; ctx.lineWidth = 2; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x - 5, ly + 19); ctx.lineTo(x + 5, ly + 19); ctx.lineTo(x, ly + 25); ctx.closePath();
+          ctx.fillStyle = '#ffc93c'; ctx.fill();
+          ctx.fillStyle = '#2b1d3a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(label, x, ly + 10);
+          // danger ring: still moving during the turn
+          if (S.phase === 'red' && moving && !zapping && S.screen === 'play') {
+            ctx.strokeStyle = `rgba(255,59,59,${0.6 + 0.4 * Math.sin(S.clock * 40)})`; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.ellipse(x, y - s * 0.45, s * 0.75, s * 0.75, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = '#ff3b3b'; ctx.font = '700 16px Fredoka, sans-serif';
+            ctx.fillText('STOP!', x, y + 16);
+          }
+        } else {
+          ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '600 11px Fredoka, sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+          ctx.fillText(r.name, x, y + 4);
+        }
+      }
+    }
+
+    function drawLasers() {
+      const targets = S.runners.filter(r => r.zapT >= 0);
+      if (!targets.length) return;
+      const eyes = eyePoints();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+      for (const r of targets) {
+        const { x, y, s } = rpos(r);
+        const tx = x, ty = y - s * 0.5;
+        const a = r.zapT < 0.08 ? r.zapT / 0.08 : r.zapT > ZAP_TIME - 0.25 ? Math.max(0, (ZAP_TIME - r.zapT) / 0.25) : 1;
+        for (const e of eyes) {
+          for (const [w, c] of [[22, 'rgba(255,30,30,.22)'], [10, 'rgba(255,70,60,.6)'], [4, 'rgba(255,235,230,.95)']]) {
+            ctx.strokeStyle = c; ctx.lineWidth = w * a * (0.8 + Math.random() * 0.4);
+            line(e.x, e.y, tx + (Math.random() - 0.5) * 4, ty + (Math.random() - 0.5) * 4);
+          }
+          const eg = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 30 * a);
+          eg.addColorStop(0, 'rgba(255,255,255,1)'); eg.addColorStop(0.4, 'rgba(255,60,60,.7)'); eg.addColorStop(1, 'rgba(255,0,0,0)');
+          ctx.fillStyle = eg; ctx.fillRect(e.x - 30, e.y - 30, 60, 60);
+        }
+        const ig = ctx.createRadialGradient(tx, ty, 0, tx, ty, 46 * a);
+        ig.addColorStop(0, 'rgba(255,255,220,.95)'); ig.addColorStop(0.35, 'rgba(255,90,40,.6)'); ig.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = ig; ctx.fillRect(tx - 46, ty - 46, 92, 92);
+        if (Math.random() < 0.6) burst(tx, ty, 2, ['#fff', '#ffd23f', '#ff5a36'], 180);
+      }
+      ctx.restore();
+    }
+
+    function drawParts() {
+      for (const p of S.parts) {
+        const k = 1 - p.life / p.max;
+        if (p.kind === 'smoke') {
+          ctx.fillStyle = `rgba(${p.color},${0.45 * k})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1.6 - k * 0.6), 0, Math.PI * 2); ctx.fill();
+        } else if (p.kind === 'confetti') {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.min(1, k * 2);
+          ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); ctx.restore();
+        } else {
+          ctx.globalAlpha = k; ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    function drawToasts() {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const t of S.toasts) {
+        const k = t.t / 1.6, y = t.y - k * 36;
+        ctx.globalAlpha = k < 0.75 ? 1 : (1 - k) / 0.25;
+        ctx.font = '700 17px Fredoka, sans-serif';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#2b1d3a'; ctx.strokeText(t.text, t.x, y);
+        ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, y);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawHUD() {
+      if (!playing()) return;
+      ctx.fillStyle = 'rgba(20,12,30,.55)'; ctx.fillRect(0, 0, W, 50);
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+      ctx.font = '700 16px Fredoka, sans-serif'; ctx.fillText('Level ' + S.level, 14, 17);
+      ctx.font = '500 13px Fredoka, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText('Score ' + S.score, 14, 36);
+      const t = Math.ceil(S.time), low = t <= 10 && S.screen === 'play';
+      ctx.textAlign = 'center';
+      ctx.font = `700 ${low ? 26 + Math.sin(S.clock * 12) * 2 : 24}px Fredoka, sans-serif`;
+      ctx.fillStyle = low ? '#ff6b6b' : '#fff';
+      ctx.fillText('⏱ ' + t, W / 2, 26);
+      ctx.textAlign = 'right'; ctx.font = `18px ${EMOJI_FONT}`;
+      ctx.fillText('❤️'.repeat(Math.max(0, S.lives)) + '🤍'.repeat(Math.max(0, MAX_LIVES - S.lives)), W - 60, 26);
+    }
+
+    function drawBanner() {
+      if (S.screen !== 'play') return;
+      const bw = Math.min(W - 32, 540), bh = 48, bx = (W - bw) / 2, by = H - 92;
+      const player = S.runners[0];
+      let bg, fg, text;
+      if (player && player.state === 'done') { bg = '#7dffb0'; fg = '#10302c'; text = '✅ Homework delivered!'; }
+      else if (S.phase === 'red') {
+        bg = Math.floor(S.clock * 6) % 2 ? '#ff3b3b' : '#e02828'; fg = '#fff';
+        text = '🔴 ' + S.chant[S.chant.length - 1] + ' FREEZE!';
+      } else if (S.fake) { bg = '#ffc93c'; fg = '#2b1d3a'; text = '🟡 … 👀 …'; }
+      else { bg = '#2ec4b6'; fg = '#10302c'; text = '🟢 ' + (S.chantIdx >= 0 ? S.chant.slice(0, S.chantIdx + 1).join(' ') : 'GO!'); }
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowOffsetY = 5;
+      rr(bx, by, bw, bh, 16); ctx.fillStyle = bg; ctx.fill();
+      ctx.restore();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#2b1d3a'; rr(bx, by, bw, bh, 16); ctx.stroke();
+      let fs = 24;
+      ctx.font = `700 ${fs}px Fredoka, ${EMOJI_FONT}`;
+      while (ctx.measureText(text).width > bw - 24 && fs > 12) { fs--; ctx.font = `700 ${fs}px Fredoka, ${EMOJI_FONT}`; }
+      ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, W / 2, by + bh / 2 + 1);
+      ctx.font = '500 13px Fredoka, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.85)';
+      const hint = W < 520 ? 'Hold the screen to sneak · let go to freeze' : 'Hold SPACE or hold the screen to sneak · let go to freeze · P to pause';
+      ctx.fillText(hint, W / 2, H - 24);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.save();
+      if (S.shake > 0) ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
+      drawRoom();
+      if (isRed() && S.screen === 'play') {
+        ctx.fillStyle = `rgba(255,30,30,${0.1 + 0.05 * Math.sin(S.clock * 10)})`; ctx.fillRect(-20, -20, W + 40, H + 40);
+      }
+      drawTrack();
+      drawPortrait();
+      drawDesk();
+      drawScanBeam();
+      drawRunners();
+      drawLasers();
+      drawParts();
+      drawToasts();
+      ctx.restore();
+      drawHUD();
+      drawBanner();
+      if (S.flash > 0) { ctx.fillStyle = `rgba(255,70,70,${S.flash * 0.35})`; ctx.fillRect(0, 0, W, H); }
+    }
+
+    // ---------- Loop ----------
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!S.paused) S.clock += dt;
+      update(dt);
+      updateFx(dt);
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    if (/[?&]debug\b/.test(location.search)) window.__game = S;
+
+    resize();
+    startScreen();
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>

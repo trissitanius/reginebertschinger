@@ -93,6 +93,25 @@
     .photo .ph b { display: block; font-size: 2rem; }
     .avatar { width: 170px; height: 170px; border-radius: 50%; margin: 0 auto 8px; box-shadow: var(--shadow); }
 
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    a.btn { display: inline-block; text-decoration: none; }
+    .btn-play { background: var(--teal); }
+
+    .game-card {
+      display: grid; grid-template-columns: 1fr; gap: 0; overflow: hidden; text-decoration: none; color: inherit;
+      background: var(--card); border: 3px solid var(--ink); border-radius: 24px; box-shadow: var(--shadow);
+      transition: transform .2s;
+    }
+    .game-card:hover { transform: rotate(-1deg) scale(1.01); }
+    .game-card img { width: 100%; height: 260px; object-fit: cover; object-position: 50% 30%; display: block; border-bottom: 3px solid var(--ink); }
+    .game-card > div { padding: 24px; }
+    .game-card h2 { margin: 12px 0 8px; }
+    .game-card p { color: var(--muted); margin: 0 0 18px; }
+    @media (min-width: 720px) {
+      .game-card { grid-template-columns: 300px 1fr; align-items: center; }
+      .game-card img { height: 100%; min-height: 300px; border-bottom: 0; border-right: 3px solid var(--ink); }
+    }
+
     section { padding: 64px 0; }
     h2 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 24px; }
 
@@ -160,7 +179,10 @@
       <span class="tag">THE OFFICIAL UNOFFICIAL WEBSITE</span>
       <h1><span class="first">Regine</span><span class="last">Bertschinger</span></h1>
       <p class="lead">Teacher of German &amp; English at the Kantonsschule Zürcher Oberland. Ski-tour leader. Committee legend. Grammar's best friend.</p>
-      <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
+      <div class="hero-btns">
+        <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
+        <a class="btn btn-play" href="game.html">Play the game 🚦</a>
+      </div>
     </div>
   </header>
 
@@ -179,6 +201,18 @@
           <p>When the Swiss Women's Strike (<em>Frauenstreik</em>) came around, she was the media representative for the KZO women's group.</p>
         </div>
       </div>
+    </section>
+
+    <section id="game">
+      <a class="game-card" href="game.html">
+        <img src="photos/regine-laser-eyes.jpg" alt="Regine with laser eyes">
+        <div>
+          <span class="tag">NEW · PLAY NOW</span>
+          <h2>Ochs am Berg: Regine Edition</h2>
+          <p>Red light, green light in Frau Bertschinger's classroom. Sneak your late homework onto her desk while she isn't looking. If she catches you moving… laser eyes.</p>
+          <span class="btn">Play 🚦</span>
+        </div>
+      </a>
     </section>
 
     <section id="facts">
