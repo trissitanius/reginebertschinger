@@ -94,6 +94,11 @@
     .avatar { width: 170px; height: 170px; border-radius: 50%; margin: 0 auto 8px; box-shadow: var(--shadow); }
 
     .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .celebrate-count { margin: 18px 0 0; color: var(--muted); font-weight: 700; min-height: 1.5em; }
+    .celebrate-count[hidden] { display: block; visibility: hidden; }
+    .celebrate-count b { color: var(--pink); display: inline-block; font-variant-numeric: tabular-nums; }
+    .celebrate-count b.bump { animation: bump .35s ease; }
+    @keyframes bump { 50% { transform: scale(1.35); } }
     a.btn { display: inline-block; text-decoration: none; }
     .btn-play { background: var(--teal); }
 
@@ -183,6 +188,7 @@
         <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
         <a class="btn btn-play" href="game.html">Play the game 🚦</a>
       </div>
+      <p class="celebrate-count" id="celebrate-count" hidden>Regine has been celebrated <b>0</b> <span>times</span> 🎉</p>
     </div>
   </header>
 
@@ -289,7 +295,25 @@
       document.getElementById('quote').textContent = quotes[i];
       burst(60);
     });
-    document.getElementById('celebrate').addEventListener('click', () => burst(220));
+    // Global celebrate counter (Cloudflare Worker in /worker)
+    const COUNTER_URL = 'https://celebrate-counter.reginebertschinger.workers.dev';
+    const countBox = document.getElementById('celebrate-count');
+    const countNum = countBox.querySelector('b');
+    let celebrations = null;
+    function showCount(n) {
+      if (celebrations !== null && n <= celebrations) return; // never go backwards
+      celebrations = n;
+      countNum.textContent = n.toLocaleString('de-CH');
+      countBox.querySelector('span').textContent = n === 1 ? 'time' : 'times';
+      countBox.hidden = false;
+      countNum.classList.remove('bump'); void countNum.offsetWidth; countNum.classList.add('bump');
+    }
+    fetch(COUNTER_URL + '/count').then(r => r.json()).then(d => showCount(d.count)).catch(() => {});
+    document.getElementById('celebrate').addEventListener('click', () => {
+      burst(220);
+      if (celebrations !== null) showCount(celebrations + 1); // instant feedback
+      fetch(COUNTER_URL + '/hit', { method: 'POST' }).then(r => r.json()).then(d => showCount(d.count)).catch(() => {});
+    });
 
     // Animate meters when visible
     const io = new IntersectionObserver(entries => {
