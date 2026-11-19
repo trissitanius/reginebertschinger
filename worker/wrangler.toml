@@ -9,3 +9,11 @@ class_name = "Counter"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Counter"]
+
+[[durable_objects.bindings]]
+name = "LEADERBOARD"
+class_name = "Leaderboard"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Leaderboard"]

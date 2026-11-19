@@ -24,7 +24,7 @@
     .overlay[hidden] { display: none; }
     .panel {
       background: #fff8ef; color: var(--ink); border: 3px solid var(--ink); border-radius: 24px;
-      box-shadow: 0 8px 0 rgba(0, 0, 0, .35); padding: 22px; width: 100%; max-width: 470px; text-align: center;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, .35); padding: 22px; width: 100%; max-width: 470px; text-align: center; box-sizing: border-box;
       animation: pop .35s cubic-bezier(.2, .9, .3, 1.3);
     }
     @keyframes pop { from { transform: scale(.85) rotate(-2deg); opacity: 0; } }
@@ -56,6 +56,23 @@
     .big { font-size: 3rem; font-weight: 700; color: var(--purple); line-height: 1; margin-top: 12px; }
     .face { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; object-position: 50% 30%; border: 3px solid var(--ink); margin: 12px auto 0; display: block; }
     kbd { font: 600 .85em Inter, sans-serif; background: #fff; border: 2px solid var(--ink); border-bottom-width: 4px; border-radius: 6px; padding: 0 6px; }
+    .panel input { -webkit-user-select: text; user-select: text; }
+    .name-field { display: block; margin: 14px auto 0; max-width: 290px; text-align: left; font-weight: 600; font-size: .95rem; }
+    .name-field input {
+      display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 14px;
+      font: 600 1.1rem Fredoka, sans-serif; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 14px;
+    }
+    .name-field input:focus { outline: 3px solid var(--purple); outline-offset: 2px; }
+    .name-error { color: #d62a5c; font-weight: 600; margin: 6px 0 0 !important; }
+    .name-error[hidden] { display: none; }
+    .lb { list-style: none; padding: 0; margin: 14px auto 6px; max-width: 320px; text-align: left; font-family: Inter, system-ui, sans-serif; }
+    .lb li { display: grid; grid-template-columns: 2em 1fr auto; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; }
+    .lb li:nth-child(odd) { background: rgba(43, 29, 58, .06); }
+    .lb li.me { background: var(--yellow); font-weight: 700; }
+    .lb .pos { font-weight: 700; color: var(--purple); text-align: center; }
+    .lb .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-you { font-family: Inter, system-ui, sans-serif; font-weight: 700; }
+    .link { background: none; border: 0; padding: 0; font: inherit; color: var(--purple); text-decoration: underline; cursor: pointer; }
     #pause {
       position: fixed; top: 10px; right: 10px; z-index: 5; width: 40px; height: 40px; border-radius: 12px;
       background: rgba(255, 255, 255, .14); border: 2px solid rgba(255, 255, 255, .4); color: #fff;
@@ -104,6 +121,39 @@
       get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
       set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
     };
+
+    // ---------- Leaderboard (Cloudflare Worker in /worker) ----------
+    const LB_URL = 'https://celebrate-counter.reginebertschinger.workers.dev/leaderboard';
+    let playerName = store.get('rlgl-name', '');
+    let boardReq = 0; // ignore replies for screens that are no longer showing
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+    function cleanName(t) { return [...String(t).replace(/\s+/g, ' ').trim()].slice(0, 16).join('').trim(); }
+    function boardHtml(top, me, rank, best) {
+      if (!top.length) return '<p class="muted">No scores yet. Be the first!</p>';
+      const medal = ['🥇', '🥈', '🥉'];
+      const mine = me ? me.toLowerCase() : null;
+      let html = '<ol class="lb">' + top.map((r, i) =>
+        `<li class="${mine && r.name.toLowerCase() === mine ? 'me' : ''}"><span class="pos">${medal[i] || i + 1}</span>` +
+        `<span class="nm">${esc(r.name)}</span><b>${r.score}</b></li>`).join('') + '</ol>';
+      if (rank > top.length) html += `<p class="lb-you">You're #${rank} with ${best} points</p>`;
+      return html;
+    }
+    function loadBoard(post) {
+      const id = ++boardReq;
+      const req = post
+        ? fetch(LB_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(post) })
+        : fetch(LB_URL);
+      req.then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(d => {
+          const el = document.getElementById('board');
+          if (id !== boardReq || !el) return;
+          el.innerHTML = boardHtml(d.top, post && post.name, d.rank, d.best);
+        })
+        .catch(() => {
+          const el = document.getElementById('board');
+          if (id === boardReq && el) el.innerHTML = '<p class="muted">Couldn’t reach the leaderboard right now.</p>';
+        });
+    }
 
     // ---------- State ----------
     let W = 0, H = 0, L = {}, smudges = [];
@@ -406,10 +456,13 @@
         <div class="big">${S.score}</div>
         <p>points · reached level ${S.level}</p>
         <p><b>${newBest ? '🏆 New best score!' : 'Best: ' + S.best}</b></p>
+        <div id="board"><p class="muted">${S.score > 0 ? 'Saving your score…' : 'Loading leaderboard…'}</p></div>
+        <p class="muted">Playing as <b>${esc(playerName)}</b> · <button class="link" data-act="menu">change name</button></p>
         <div class="row">
           <button class="btn" data-primary data-act="restart">Try again</button>
           <a class="btn alt" href="./">Homepage</a>
         </div>`);
+      loadBoard(S.score > 0 ? { name: playerName, score: S.score, level: S.level } : null);
     }
 
     function saveBest() {
@@ -440,8 +493,23 @@
           <figure class="r"><img src="${SRC_LASER}" alt="Regine with laser eyes"><figcaption>🔴 Laser eyes: FREEZE</figcaption></figure>
         </div>
         <p><b>Hold</b> <kbd>Space</kbd> or <b>press and hold</b> the screen to move. Let go to stop. You slide a little, so stop early! She fakes turns sometimes 👀</p>
-        <div class="row"><button class="btn" data-primary data-act="start">Start 🚦</button></div>
+        <label class="name-field">Your name for the leaderboard
+          <input id="player-name" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="e.g. Lena" value="${esc(playerName)}">
+        </label>
+        <p class="name-error" id="name-error" hidden>Type your name first 🙂</p>
+        <div class="row">
+          <button class="btn" data-primary data-act="start">Start 🚦</button>
+          <button class="btn alt" data-act="board">🏆 Leaderboard</button>
+        </div>
         ${S.best ? `<p class="muted">Your best: ${S.best}</p>` : ''}`);
+    }
+    function boardScreen() {
+      S.screen = 'board';
+      showOverlay(`
+        <h1>🏆 Leaderboard<small>The sneakiest students at KZO</small></h1>
+        <div id="board"><p class="muted">Loading…</p></div>
+        <div class="row"><button class="btn" data-primary data-act="menu">Back</button></div>`);
+      loadBoard(null);
     }
     function pauseScreen() {
       showOverlay(`
@@ -465,10 +533,22 @@
       if (!b) return;
       audio();
       const act = b.dataset.act;
-      if (act === 'start' || act === 'restart') newGame();
+      if (act === 'start') {
+        const input = document.getElementById('player-name');
+        const name = cleanName(input.value);
+        if (!name) { document.getElementById('name-error').hidden = false; input.focus(); return; }
+        playerName = name; store.set('rlgl-name', name);
+        newGame();
+      }
+      else if (act === 'restart') { if (playerName) newGame(); else startScreen(); }
+      else if (act === 'board') boardScreen();
+      else if (act === 'menu') startScreen();
       else if (act === 'next') { S.level++; startLevel(); }
       else if (act === 'resume') togglePause(false);
       else if (act === 'mute') { S.muted = !S.muted; store.set('rlgl-muted', S.muted); b.textContent = S.muted ? '🔇 Sound off' : '🔊 Sound on'; }
+    });
+    panel.addEventListener('input', e => {
+      if (e.target.id === 'player-name') document.getElementById('name-error').hidden = true;
     });
     pauseBtn.addEventListener('click', () => togglePause(true));
 
@@ -476,7 +556,9 @@
     const HOLD_KEYS = new Set(['Space', 'ArrowUp', 'KeyW']);
     window.addEventListener('keydown', e => {
       if (!overlay.hidden) {
-        if (e.code === 'Space' || e.code === 'Enter') {
+        const typing = e.target && e.target.tagName === 'INPUT';
+        if (typing && e.key !== 'Enter') return;
+        if (e.code === 'Space' || e.key === 'Enter') {
           const p = panel.querySelector('[data-primary]');
           if (p) { e.preventDefault(); if (!e.repeat) p.click(); }
         } else if ((e.code === 'Escape' || e.code === 'KeyP') && S.paused) togglePause(false);
