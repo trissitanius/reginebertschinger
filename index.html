@@ -108,13 +108,13 @@
       transition: transform .2s;
     }
     .game-card:hover { transform: rotate(-1deg) scale(1.01); }
-    .game-card img { width: 100%; height: 260px; object-fit: cover; object-position: 50% 30%; display: block; border-bottom: 3px solid var(--ink); }
+    .game-card img, .game-card svg { width: 100%; height: 260px; object-fit: cover; object-position: 50% 30%; display: block; border-bottom: 3px solid var(--ink); }
     .game-card > div { padding: 24px; }
     .game-card h2 { margin: 12px 0 8px; }
     .game-card p { color: var(--muted); margin: 0 0 18px; }
     @media (min-width: 720px) {
       .game-card { grid-template-columns: 300px 1fr; align-items: center; }
-      .game-card img { height: 100%; min-height: 300px; border-bottom: 0; border-right: 3px solid var(--ink); }
+      .game-card img, .game-card svg { height: 100%; min-height: 300px; border-bottom: 0; border-right: 3px solid var(--ink); }
     }
 
     section { padding: 64px 0; }
@@ -237,7 +237,7 @@
       <p class="lead">Teacher of German &amp; English at the Kantonsschule Zürcher Oberland. Ski-tour leader. Committee legend. Grammar's best friend.</p>
       <div class="hero-btns">
         <button class="btn" id="celebrate">Celebrate Regine 🎉</button>
-        <a class="btn btn-play" href="game.html">Play the game 🚦</a>
+        <a class="btn btn-play" href="#game">Play the games 🎮</a>
       </div>
       <p class="celebrate-count" id="celebrate-count" hidden>Regine has been celebrated <b>0</b> <span>times</span> 🎉</p>
     </div>
@@ -267,6 +267,32 @@
           <h2>Ochs am Berg: Regine Edition</h2>
           <p>Red light, green light in Frau Bertschinger's classroom. Sneak your late homework onto her desk while she isn't looking. If she catches you moving… laser eyes.</p>
           <span class="btn">Play 🚦</span>
+        </div>
+      </a>
+      <a class="game-card" href="ski.html" style="margin-top:22px">
+        <svg viewBox="0 0 300 260" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Three ski gates marked der, die and das on a snowy slope">
+          <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ec5ff"/><stop offset="1" stop-color="#d8ecff"/></linearGradient></defs>
+          <rect width="300" height="260" fill="url(#sky)"/>
+          <path d="M0 120 L60 55 L95 90 L150 30 L210 95 L245 65 L300 115 V260 H0Z" fill="#b9cde6"/>
+          <path d="M150 30 L170 52 L158 50 L150 60 L141 49 L132 50Z M60 55 L74 70 L60 66 L48 68Z" fill="#fff"/>
+          <path d="M0 140 Q150 105 300 140 V260 H0Z" fill="#f4f8ff"/>
+          <g font-family="Fredoka, sans-serif" font-weight="700" font-size="17" text-anchor="middle" stroke="#2b1d3a" stroke-width="2.5">
+            <rect x="22" y="160" width="4" height="52" fill="#2f6fed" stroke="none"/><rect x="82" y="160" width="4" height="52" fill="#2f6fed" stroke="none"/>
+            <rect x="18" y="154" width="72" height="26" rx="7" fill="#2f6fed"/>
+            <rect x="117" y="148" width="4" height="52" fill="#e8364f" stroke="none"/><rect x="177" y="148" width="4" height="52" fill="#e8364f" stroke="none"/>
+            <rect x="113" y="142" width="72" height="26" rx="7" fill="#e8364f"/>
+            <rect x="212" y="160" width="4" height="52" fill="#17a35e" stroke="none"/><rect x="272" y="160" width="4" height="52" fill="#17a35e" stroke="none"/>
+            <rect x="208" y="154" width="72" height="26" rx="7" fill="#17a35e"/>
+            <g fill="#fff" stroke="none"><text x="54" y="173">der</text><text x="149" y="161">die</text><text x="244" y="173">das</text></g>
+          </g>
+          <path d="M140 258 Q148 236 150 214 M158 258 Q164 236 160 214" stroke="#9fb8d8" stroke-width="2.5" fill="none"/>
+          <text x="150" y="246" font-size="40" text-anchor="middle">⛷️</text>
+        </svg>
+        <div>
+          <span class="tag">NEW · PLAY NOW</span>
+          <h2>Der, Die, Das Downhill</h2>
+          <p>Ski down the slope with Regine. A noun pops up and you steer through the gate with the right article. The slope keeps getting faster, and a wrong gate means a wipeout in the snow.</p>
+          <span class="btn">Ski ⛷️</span>
         </div>
       </a>
     </section>

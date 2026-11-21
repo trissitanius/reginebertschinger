@@ -111,10 +111,13 @@ function cleanName(raw) {
   return [...raw.replace(/[\p{C}]/gu, "").replace(/\s+/g, " ").trim()].slice(0, 16).join("").trim();
 }
 
-// Highest score the game can award by the end of `level` (level bonus + max time + 1st place + no-zap bonus).
-function maxScore(level) {
-  return 250 * level * (level + 1) + 2900 * level;
-}
+// One leaderboard per game (?game=...). `level` is the game's progress measure; maxScore caps what it can award.
+const GAMES = {
+  // Ochs am Berg: level bonus + max time + 1st place + no-zap bonus, summed over levels.
+  game: { maxLevel: 500, maxScore: level => 250 * level * (level + 1) + 2900 * level },
+  // Der, Die, Das Downhill: `level` = correct gates, each worth at most 10 points x5 streak multiplier.
+  ski: { maxLevel: 5000, maxScore: gates => 50 * gates },
+};
 
 const ALLOWED_ORIGINS = [
   "https://reginebertschinger.com",
@@ -143,7 +146,10 @@ export default {
       Response.json(data, { status, headers: { ...cors, "Cache-Control": "no-store" } });
 
     if (pathname === "/leaderboard") {
-      const board = env.LEADERBOARD.get(env.LEADERBOARD.idFromName("game"));
+      const gameId = url.searchParams.get("game") || "game";
+      const rules = Object.hasOwn(GAMES, gameId) ? GAMES[gameId] : null;
+      if (!rules) return json({ error: "unknown game" }, 404);
+      const board = env.LEADERBOARD.get(env.LEADERBOARD.idFromName(gameId));
       if (request.method === "GET") return json({ top: await board.top() });
       if (request.method === "POST") {
         let body;
@@ -151,8 +157,8 @@ export default {
         const name = cleanName(body.name);
         const score = body.score, level = body.level;
         if (!name) return json({ error: "name required" }, 400);
-        if (!Number.isInteger(level) || level < 1 || level > 500 ||
-            !Number.isInteger(score) || score < 1 || score > maxScore(level)) {
+        if (!Number.isInteger(level) || level < 1 || level > rules.maxLevel ||
+            !Number.isInteger(score) || score < 1 || score > rules.maxScore(level)) {
           return json({ error: "invalid score" }, 400);
         }
         return json(await board.submit(name, score, level));
