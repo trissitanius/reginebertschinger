@@ -17,3 +17,11 @@ class_name = "Leaderboard"
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["Leaderboard"]
+
+[[durable_objects.bindings]]
+name = "COMMENTS"
+class_name = "Comments"
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Comments"]

@@ -56,6 +56,55 @@ export class Leaderboard extends DurableObject {
   }
 }
 
+// Comment wall: anyone can post a short message; the homepage shows the newest few.
+const COMMENT_MAX = 140;
+const COMMENT_COOLDOWN_MS = 20_000; // per IP
+const COMMENT_KEEP = 300;           // older comments are pruned
+
+export class Comments extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.sql = ctx.storage.sql;
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, text TEXT NOT NULL, ts INTEGER NOT NULL)`);
+    this.lastPost = new Map(); // ip -> time of last post (in memory; resets if the object sleeps)
+  }
+
+  latest(limit = 5) {
+    return this.sql.exec(
+      "SELECT id, name, text, ts FROM comments ORDER BY id DESC LIMIT ?", limit).toArray();
+  }
+
+  post(name, text, ip) {
+    const now = Date.now();
+    const prev = this.lastPost.get(ip);
+    if (prev && now - prev < COMMENT_COOLDOWN_MS) {
+      return { error: "slow down", retryAfter: Math.ceil((COMMENT_COOLDOWN_MS - (now - prev)) / 1000) };
+    }
+    const newest = this.latest(1)[0];
+    if (newest && newest.text.toLowerCase() === text.toLowerCase()) return { error: "duplicate" };
+
+    if (this.lastPost.size > 5000) this.lastPost.clear();
+    this.lastPost.set(ip, now);
+    this.sql.exec("INSERT INTO comments (name, text, ts) VALUES (?, ?, ?)", name, text, now);
+    this.sql.exec(
+      "DELETE FROM comments WHERE id <= (SELECT MAX(id) FROM comments) - ?", COMMENT_KEEP);
+    return { latest: this.latest() };
+  }
+
+  remove(id) {
+    this.sql.exec("DELETE FROM comments WHERE id = ?", id);
+    return { latest: this.latest() };
+  }
+}
+
+// Drop control and invisible bidi characters (keeps emoji joiners), collapse whitespace, trim, cap length.
+function cleanText(raw, max) {
+  if (typeof raw !== "string") return "";
+  const s = raw.replace(/[\p{Cc}​‪-‮⁦-⁩﻿]/gu, "").replace(/\s+/g, " ").trim();
+  return [...s].slice(0, max).join("").trim();
+}
+
 // Trim, drop control characters, collapse spaces, max 16 characters.
 function cleanName(raw) {
   if (typeof raw !== "string") return "";
@@ -113,6 +162,33 @@ export default {
           return json({ error: "unauthorized" }, 401);
         }
         return json(await board.remove(url.searchParams.get("name") || ""));
+      }
+      return json({ error: "method not allowed" }, 405);
+    }
+
+    if (pathname === "/comments") {
+      const wall = env.COMMENTS.get(env.COMMENTS.idFromName("wall"));
+      if (request.method === "GET") return json({ latest: await wall.latest() });
+      if (request.method === "POST") {
+        let body;
+        try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
+        if (body.website) return json({ latest: await wall.latest() }); // honeypot: bots fill every field
+        const text = cleanText(body.text, COMMENT_MAX);
+        const name = cleanName(body.name) || "Anonymous";
+        if (!text) return json({ error: "comment required" }, 400);
+        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+        const result = await wall.post(name, text, ip);
+        if (result.error === "slow down") return json(result, 429);
+        if (result.error) return json(result, 409);
+        return json(result);
+      }
+      if (request.method === "DELETE") {
+        if (!env.ADMIN_KEY || request.headers.get("Authorization") !== `Bearer ${env.ADMIN_KEY}`) {
+          return json({ error: "unauthorized" }, 401);
+        }
+        const id = Number(url.searchParams.get("id"));
+        if (!Number.isInteger(id)) return json({ error: "id required" }, 400);
+        return json(await wall.remove(id));
       }
       return json({ error: "method not allowed" }, 405);
     }
